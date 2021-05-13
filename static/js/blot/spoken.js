@@ -9,7 +9,7 @@ class spoken extends Inline {
   }
 
   optimize (context) {
-    console.log('spoken optimize()');
+    console.log('spoken optimize()', this);
     if (this.children.length === 0) {
       this.remove()
       console.log('this spoken removed',this);
