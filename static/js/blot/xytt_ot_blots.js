@@ -3,6 +3,7 @@ const Quill = require('quill')
 const Embed = Quill.import('blots/embed')
 const Text = Quill.import('blots/text')
 const Inline = Quill.import('blots/inline')
+const equal = require('deep-equal');
 
 class SpokenBlot extends Inline {
   static formats(node) {
@@ -107,6 +108,7 @@ Speaker.tagName = 'span'
 
 class rangeBlot extends Inline {
   optimize (context) {
+    console.log("rangeBlot optimize!", this)
     if (!this.prev) return
     if (this.prev.statics.blotName != 'range') return
 
@@ -132,7 +134,7 @@ class rangeBlot extends Inline {
   formatAt (index, length, name, value) {
     if (name != 'spoken') return super.formatAt(index, length, name, value)
 
-    console.log('===> range format')
+    console.log('===> range format', {index, length, name, value})
 
     let blot = this.isolate(index, length)
     blot.children.forEach(i => i.wrap(name, value))
@@ -141,7 +143,7 @@ class rangeBlot extends Inline {
   static create (value) {
     const node = super.create()
     const spokens = value.spokens
-
+    console.log("range create:", value)
     if (value.begin != null) node.setAttribute('begin', value.begin)
     if (value.end != null) node.setAttribute('end', value.end)
     if (value.var) node.setAttribute('var', value.var)
@@ -154,6 +156,7 @@ class rangeBlot extends Inline {
   }
 
   static formats (node) {
+    console.log("rangeBlot formats!", node)
     return {
       begin: node.getAttribute('begin'),
       end: node.getAttribute('end'),
@@ -202,7 +205,86 @@ class languageBlot extends Inline {
 }
 languageBlot.blotName = 'lang'
 
+class ImageBlot extends Embed {
+  static create ({ src }) {
+    const node = super.create()
+    node.setAttribute('src', src)
+    return node
+  }
+  static formats (node) {
+    return {
+      src: node.getAttribute('src')
+    }
+  }
+}
+
+ImageBlot.className = 'speaker-img'
+ImageBlot.blotName = 'speaker-img'
+ImageBlot.tagName = 'img'
+
+class SpeakerV2 extends Embed {
+  constructor (node, value) {
+    super(node)
+    const { name, role, tag, timestamp, src } = value
+    if (name == '未知') {
+      this.domNode.classList.add('unknow-speaker')
+    }
+
+    this.domNode.setAttribute('role', role)
+    this.domNode.setAttribute('tag', tag)
+    this.domNode.setAttribute('name', name)
+    this.domNode.setAttribute('timestamp', timestamp)
+
+    const $preI = ImageBlot.create({ src })
+    this.contentNode.appendChild($preI)
+    let time = formatBegin(timestamp)
+    this.contentNode.appendChild(Text.create(time))
+  }
+
+  static value (domNode) {
+    return {
+      role: domNode.getAttribute('role'),
+      tag: domNode.getAttribute('tag'),
+      name: domNode.getAttribute('name'),
+      timestamp: domNode.getAttribute('timestamp'),
+      src: domNode.firstElementChild.firstElementChild.getAttribute('src')
+    }
+  }
+
+  optimize (context) {
+    if (this.parent && (this.parent.statics.blotName == 'spoken' || this.parent.statics.blotName == 'range')) {
+      this.parent.isolate(0, 1)
+      this.parent.unwrap()
+    } else {
+      super.optimize(context)
+    }
+  }
+}
+SpeakerV2.className = 'speakerV2'
+SpeakerV2.blotName = 'speakerV2'
+SpeakerV2.tagName = 'span'
+
 Quill.register(SpokenBlot)
 Quill.register(Speaker)
 Quill.register(rangeBlot)
 Quill.register(languageBlot)
+Quill.register(SpeakerV2)
+
+function formatBegin(begin) {
+  if (!begin || typeof begin != "number") return '00:00'
+  let min = Math.floor(begin/1000/60)
+  let sec = Math.floor((begin - min * 1000 * 60)/1000)
+  let minStr
+  let secStr
+  if (min < 10) {
+    minStr = '0' + min
+  } else {
+    minStr = '' + min
+  }
+  if (sec < 10) {
+    secStr = '0' + sec
+  } else {
+    secStr = '' + sec
+  }
+  return minStr +':' + secStr
+}

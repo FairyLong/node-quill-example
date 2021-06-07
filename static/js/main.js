@@ -9,21 +9,22 @@ sharedb.types.register(richText.type);
 
 
 // Open WebSocket connection to ShareDB server
-const serverUrl = 'ws://localhost:7005/ot/server/user/123456/record/1234' // 转写服务器消息
+const serverUrl = 'ws://localhost:7005/ot/server/user/123456/record/1234?ishyb=1' // 转写服务器消息
 const clientUrl = 'ws://localhost:7005/ot/pc/user/123456/record/1234' // PC端shareDB同步消息
+// const clientUrl = 'ws://meeting.beta.duiopen.com/ot/pc/user/1000002262/record/29987' // PC端shareDB同步消息
 const clientSocket = new ReconnectingWebSocket(clientUrl);
 const serverSocket = new WebSocket(serverUrl);
 const connection = new sharedb.Connection(clientSocket);
 
-serverSocket.onopen = function () {
-  serverSocket.send("{\"event\":\"record.call.begin\"}")
-  serverSocket.send("{\"event\":\"record.call.begin\"}")
-  setTimeout(function () {
-    console.log("time send")
-    serverSocket.send("{\"event\":\"record.call.begin\"}")
-  },2000)
-
-}
+// serverSocket.onopen = function () {
+//   serverSocket.send("{\"event\":\"record.call.begin\"}")
+//   serverSocket.send("{\"event\":\"record.call.begin\"}")
+//   setTimeout(function () {
+//     console.log("time send")
+//     serverSocket.send("{\"event\":\"record.call.begin\"}")
+//   },2000)
+//
+// }
 
 let editor = new Quill('#editor', {
   modules: {
@@ -54,6 +55,7 @@ let editor = new Quill('#editor', {
 
 // Create local Doc instance mapped to 'examples' collection document with id 'richtext'
 let doc = connection.get('record_doc_4', '1234'); // 联调注意修改
+// let doc = connection.get('record_doc_9', '35689'); // 联调注意修改
 doc.subscribe(function(err) {
   if (err) throw err;
   console.log(doc)
@@ -67,7 +69,7 @@ doc.subscribe(function(err) {
       console.log("source is quill, ignore")
       return;
     }
-    console.log("on op", op)
+    console.log("on op", JSON.stringify(op))
     editor.updateContents(op);
   });
 });
@@ -76,30 +78,24 @@ doc.subscribe(function(err) {
 // editor.formatText(0, 4, 'italic', true);
 
 $('#click').click(function (){
-  let op = [{
-    insert: {speaker: {name: "魏老师"}},
-    attributes: {lang: 'ch'}
-  },{
-    insert: "测试中文",
-    attributes: {range: {begin:0, end: 1}, lang: 'ch'}
-  },{
-    insert: "\n"
-  },{
-    insert: {speaker: {name: 'Teacher Wei'}},
-    attributes: {lang: 'en'}
-  },{
-    insert: "Test Chinese",
-    attributes: {range: {begin:0, end: 1}, lang: 'en'}
-  },{
-    insert: "\n"
-  },{
-    insert: {speaker: {name: "魏老师"}}
-  },{
-    insert: "测试",
-    attributes: {range: {begin:0, end: 1}}
-  }]
+  let op = [{"insert":{"speakerV2":{"name":"我","tag":"role","role":0,"timestamp":437604,"src":"https://meeting.beta.duiopen.com/h5/wechat/assets/icon_speaker_me.png"}}},{"insert":"\n"},{"attributes":{"range":{"begin":426364,"end":427604,"role":0,"speaker":null},"spoken":true},"insert":"唉"},{"attributes":{"range":{"begin":426364,"end":427604,"role":0,"speaker":null}},"insert":"晚上吃啥呢？"},{"insert":"\n"}]
   editor.updateContents(op);
-  // editor.updateContents(new Delta().retain(4,  {bold:null, italic: null}));
+
+  setTimeout(() => {
+    op = [{"retain":10},{"insert":"四","attributes":{"renderAsBlock":1,"range":{"var":true}}}]
+    editor.updateContents(op);
+  },1000)
+
+  setTimeout(() => {
+    op = [{"retain":10},{"insert":{"speakerV2":{"name":"我","tag":"role","role":0,"timestamp":437604,"src":"https://meeting.beta.duiopen.com/h5/wechat/assets/icon_speaker_me.png"}}},{"insert":"\n"}]
+    editor.updateContents(op);
+  },2000)
+
+  setTimeout(() => {
+    op = [{"retain":12},{"insert":"418","attributes":{"range":{"begin":437604,"end":438904,"role":0,"speaker":null}}}]
+    editor.updateContents(op);
+  },3000)
+  editor.updateContents(new Delta().retain(4,  {bold:null, italic: null}));
 })
 
 $('#click2').click(function (){
