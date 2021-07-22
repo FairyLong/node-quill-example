@@ -82,7 +82,7 @@ $('#click').click(function (){
   editor.updateContents(op);
 
   setTimeout(() => {
-    op = [{"retain":10},{"insert":"四","attributes":{"renderAsBlock":1,"range":{"var":true}}}]
+    op = [{"retain":10},{"insert":"四1","attributes":{"renderAsBlock":1,"range":{"var":true}}}]
     editor.updateContents(op);
   },1000)
 
