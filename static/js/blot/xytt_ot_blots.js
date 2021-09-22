@@ -272,21 +272,38 @@ Quill.register(rangeBlot)
 Quill.register(languageBlot)
 Quill.register(SpeakerV2)
 
-function formatBegin(begin) {
-  if (!begin || typeof begin != "number") return '00:00'
-  let min = Math.floor(begin/1000/60)
-  let sec = Math.floor((begin - min * 1000 * 60)/1000)
-  let minStr
-  let secStr
-  if (min < 10) {
-    minStr = '0' + min
-  } else {
-    minStr = '' + min
+function formatBegin(begin,fmt) {
+  if (!begin) return '00:00:00'
+  const second=typeof begin === 'number' ? Math.floor(begin)/1000 : 0
+  if (!fmt) fmt = 'hh:mm:ss'
+  var leftSecond = typeof second === 'number' ? Math.floor(second) : 0
+  var str = ''
+  var substrs = function (str, len) {
+    return len == 1 ? str : (('00' + str).substr((('' + str).length) > 2 ? 2 : ('' + str).length))
   }
-  if (sec < 10) {
-    secStr = '0' + sec
-  } else {
-    secStr = '' + sec
+  // 天
+  if (/(d+)/.test(fmt)) {
+    var dd = Math.floor(leftSecond / (3600 * 24))
+    fmt = fmt.replace(/d+/, substrs(dd, RegExp.$1.length))
+    leftSecond = leftSecond % (3600 * 24)
   }
-  return minStr +':' + secStr
+  // 小时
+  if (/h+/.test(fmt)) {
+    var hh = Math.floor(leftSecond / (3600))
+    fmt = fmt.replace(/h+/, substrs(hh, RegExp.$1.length))
+    leftSecond = leftSecond % (3600)
+  }
+  // 分钟
+  if (/m+/.test(fmt)) {
+    var mm = Math.floor(leftSecond / (60))
+    fmt = fmt.replace(/m+/, substrs(mm, RegExp.$1.length))
+    leftSecond = leftSecond % (60)
+  }
+  // 秒
+  if (/s+/.test(fmt)) {
+    var ss = Math.round(leftSecond / 1)
+    fmt = fmt.replace(/s+/, substrs(ss, RegExp.$1.length))
+  }
+  return fmt
+
 }

@@ -1,6 +1,6 @@
 // const interjection = require('./interjection');
 // const spoken = require('./spoken');
 // const speaker = require('./speaker');
-const xytt = require('./xytt_ot_blots');
+const xytt = require('./heming_ot_blot.js');
 
 module.exports = {xytt}

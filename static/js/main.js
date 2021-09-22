@@ -5,12 +5,18 @@ const Delta = Quill.import('delta')
 const ReconnectingWebSocket = require('reconnecting-websocket');
 const sharedb = require('sharedb/lib/client');
 const richText = require('rich-text');
+const util = require('util')
 sharedb.types.register(richText.type);
 
+const serverIp = '172.16.56.176'
+const serverPort = '7005'
+const userId = 123456
+const recordId = 1234
+const collection = 'record_doc_' + recordId%10
 
 // Open WebSocket connection to ShareDB server
-const serverUrl = 'ws://localhost:7005/ot/server/user/123456/record/1234?ishyb=1' // 转写服务器消息
-const clientUrl = 'ws://localhost:7005/ot/pc/user/123456/record/1234' // PC端shareDB同步消息
+const serverUrl = util.format('ws://%s:%s/ot/server/user/%s/record/%s?ishyb=1', serverIp, serverPort, userId, recordId) // 转写服务器消息
+const clientUrl = util.format('ws://%s:%s/ot/pc/user/%s/record/%s', serverIp, serverPort, userId, recordId) // PC端shareDB同步消息
 // const clientUrl = 'ws://meeting.beta.duiopen.com/ot/pc/user/1000002262/record/29987' // PC端shareDB同步消息
 const clientSocket = new ReconnectingWebSocket(clientUrl);
 const serverSocket = new WebSocket(serverUrl);
@@ -54,18 +60,17 @@ let editor = new Quill('#editor', {
 });
 
 // Create local Doc instance mapped to 'examples' collection document with id 'richtext'
-let doc = connection.get('record_doc_4', '1234'); // 联调注意修改
-// let doc = connection.get('record_doc_9', '35689'); // 联调注意修改
+let doc = connection.get(collection, recordId.toString()); // 联调注意修改
 doc.subscribe(function(err) {
   if (err) throw err;
   console.log(doc)
   editor.setContents(doc.data);
-  // editor.on('text-change', function(delta, oldDelta, source) {
-  //   if (source !== 'user') return;
-  //   doc.submitOp(delta, {source: quill});
-  // });
+  editor.on('text-change', function(delta, oldDelta, source) {
+    if (source !== 'user') return;
+    doc.submitOp(delta, {source: 'quill'});
+  });
   doc.on('op', function(op, source) {
-    if (source === editor) {
+    if (source === "quill") {
       console.log("source is quill, ignore")
       return;
     }
@@ -129,4 +134,10 @@ $('#send').click(function () {
 $('#end').click(function () {
   serverSocket.close()
   clientSocket.close()
+})
+
+$('#clear').click(function () {
+  $.post(util.format('http://%s:%s/ot/record/clear', serverIp, serverPort), {recordId, userId}, function (res) {
+    console.log(res)
+  }, 'json')
 })
