@@ -224,8 +224,9 @@ ImageBlot.tagName = 'img'
 
 class SpeakerV2 extends Embed {
   constructor (node, value) {
+
     super(node)
-    const { name, role, tag, timestamp, src } = value
+    const { name, role, tag, timestamp, speaker } = value
     if (name == '未知') {
       this.domNode.classList.add('unknow-speaker')
     }
@@ -234,12 +235,10 @@ class SpeakerV2 extends Embed {
     this.domNode.setAttribute('tag', tag)
     this.domNode.setAttribute('name', name)
     this.domNode.setAttribute('timestamp', timestamp)
+    this.domNode.setAttribute('speaker', speaker)
 
-    const $preI = ImageBlot.create({ src })
-    this.contentNode.appendChild($preI)
     let time = formatBegin(timestamp)
-    let text = time + ' ' + (role? '对方':'我')
-    this.contentNode.appendChild(Text.create(text))
+    this.contentNode.appendChild(Text.create(name + ' ' + time))
   }
 
   static value (domNode) {
@@ -248,13 +247,12 @@ class SpeakerV2 extends Embed {
       tag: domNode.getAttribute('tag'),
       name: domNode.getAttribute('name'),
       timestamp: domNode.getAttribute('timestamp'),
-      src: domNode.firstElementChild.firstElementChild.getAttribute('src')
+      speaker: domNode.getAttribute('speaker'),
     }
   }
 
   optimize (context) {
     if (this.parent && (this.parent.statics.blotName == 'spoken' || this.parent.statics.blotName == 'range')) {
-      console.log("speakerV2 isolate optimize")
       this.parent.isolate(0, 1)
       this.parent.unwrap()
     } else {
