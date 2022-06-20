@@ -154,6 +154,7 @@ class speakerV2Blot extends Embed {
         this.domNode.setAttribute('name', name)
         this.domNode.setAttribute('timestamp', timestamp)
 
+        console.log("heming speakerV2 in")
         const $preI = iconBlot.create({ iconText: name && name[0] ? name[0] : ' ' })
         this.contentNode.appendChild($preI)
         this.contentNode.appendChild(Text.create(`${name}：`))

@@ -9,18 +9,45 @@ const util = require('util')
 sharedb.types.register(richText.type);
 
 const serverIp = '172.16.56.176'
-const serverPort = '7005'
+const serverPort = '7105'
 const userId = 123456
 const recordId = 1234
 const collection = 'record_doc_' + recordId%10
+// const collection = 'cloud_record_doc_' + recordId%10
 
 // Open WebSocket connection to ShareDB server
-const serverUrl = util.format('ws://%s:%s/ot/server/user/%s/record/%s?ishyb=1', serverIp, serverPort, userId, recordId) // 转写服务器消息
-const clientUrl = util.format('ws://%s:%s/ot/pc/user/%s/record/%s', serverIp, serverPort, userId, recordId) // PC端shareDB同步消息
+const serverUrl = util.format('ws://%s:%s/ot/server/mile/user/%s/record/%s?origin=cn&translate=en', serverIp, serverPort, userId, recordId) // 转写服务器消息 mile
+// const serverUrl = util.format('ws://%s:%s/ot/server/user/%s/record/%s?ishyb=1', serverIp, serverPort, userId, recordId) // 转写服务器消息
+const clientUrl = util.format('ws://%s:%s/ot/pc/mile/user/%s/record/%s', serverIp, serverPort, userId, recordId) // PC端ws mile
+// const clientUrl = util.format('ws://%s:%s/ot/pc/user/%s/record/%s', serverIp, serverPort, userId, recordId) // PC端shareDB同步消息
+const shareUrl = util.format('ws://%s:%s/ot/share/record/%s?lang=EN', serverIp, serverPort, recordId) // PC端分享链接 mile
 // const clientUrl = 'ws://meeting.beta.duiopen.com/ot/pc/user/1000002262/record/29987' // PC端shareDB同步消息
 const clientSocket = new ReconnectingWebSocket(clientUrl);
 const serverSocket = new WebSocket(serverUrl);
+const shareSocket = new WebSocket(shareUrl);
 const connection = new sharedb.Connection(clientSocket);
+
+// clientSocket.onmessage = event => {
+//     console.log('receive msg: ' + event.data + JSON.stringify(event))
+//     try {
+//         var data = (typeof event.data === 'string') ?
+//         JSON.parse(event.data) : event.data;
+//     } catch (err) {
+//         return;
+//     }
+//
+//     let request = {data: data};
+//     connection.emit('receive', request);
+//     if (!request.data) return;
+//
+//     try {
+//         connection.handleMessage(request.data);
+//     } catch (err) {
+//         util.nextTick(function() {
+//             connection.emit('error', err);
+//         });
+//     }
+// }
 
 // serverSocket.onopen = function () {
 //   serverSocket.send("{\"event\":\"record.call.begin\"}")
@@ -63,7 +90,28 @@ let editor = new Quill('#editor', {
 let doc = connection.get(collection, recordId.toString()); // 联调注意修改
 doc.subscribe(function(err) {
     if (err) throw err;
-    console.log(doc)
+    // console.log(doc)
+    // let newOps = doc.data.ops.reduce((memo, op) => {
+    //     if (typeof op.insert != 'object' && !/^\n$/.test(op.insert)) memo.push(op)
+    //     return memo
+    // },[])
+    // console.log(newOps)
+    // editor.setContents(newOps)
+    // doc.on('op', function(op, source) {
+    //     if (source === "quill") {
+    //         console.log("source is quill, ignore")
+    //         return;
+    //     }
+    //     console.log("on op", JSON.stringify(op))
+    //     doc.fetch((err) => {
+    //         newOps = doc.data.ops.reduce((memo, op) => {
+    //             if (typeof op.insert != 'object' && !/^\n$/.test(op.insert)) memo.push(op)
+    //             return memo
+    //         },[])
+    //         console.log(newOps)
+    //         editor.setContents(newOps);
+    //     })
+    // });
     editor.setContents(doc.data);
     editor.on('text-change', function(delta, oldDelta, source) {
         if (source !== 'user') return;
@@ -125,12 +173,34 @@ $('#send').click(function () {
         let i = 0
         msg.forEach(m => {
             setTimeout(() => {
-                serverSocket.send(m)
-            }, 500 * i)
+                if (typeof m == 'string') {
+                    serverSocket.send(m)
+                } else {
+                    doc.submitOp(m)
+                }
+
+            }, 100 * i)
             i++
         })
     } else {
         serverSocket.send(msg)
+    }
+
+})
+
+$('#clientSend').click(function () {
+    let msg = JSON.parse($('#clientOp').val())
+    if (msg instanceof Array) {
+        console.log("send client array")
+        let i = 0
+        msg.forEach(m => {
+            setTimeout(() => {
+                doc.submitOp(msg)
+            }, 200 * i)
+            i++
+        })
+    } else {
+        doc.submitOp(msg)
     }
 
 })

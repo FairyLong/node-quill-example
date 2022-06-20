@@ -226,19 +226,30 @@ class SpeakerV2 extends Embed {
   constructor (node, value) {
 
     super(node)
-    const { name, role, tag, timestamp, speaker } = value
+    const { name, role, tag, timestamp, speaker, src, type } = value
     if (name == '未知') {
       this.domNode.classList.add('unknow-speaker')
     }
 
-    this.domNode.setAttribute('role', role)
-    this.domNode.setAttribute('tag', tag)
-    this.domNode.setAttribute('name', name)
-    this.domNode.setAttribute('timestamp', timestamp)
-    this.domNode.setAttribute('speaker', speaker)
+    if (name) this.domNode.setAttribute('name', name)
+    if (typeof role != "undefined") this.domNode.setAttribute('role', role)
+    if (tag) this.domNode.setAttribute('tag', tag)
+    if (typeof timestamp != "undefined") this.domNode.setAttribute('timestamp', timestamp)
+    if (typeof speaker != "undefined") this.domNode.setAttribute('speaker', speaker)
 
-    let time = formatBegin(timestamp)
-    this.contentNode.appendChild(Text.create(name + ' ' + time))
+    console.log("xytt speakerV2 in")
+    if (type == 'offline') {
+      const $preI = IconBlot.create({ iconText: speaker })
+      this.contentNode.appendChild($preI)
+      let time = formatBegin(timestamp)
+      this.contentNode.appendChild(Text.create(time))
+    } else if (type == 'online') {
+      const $preI = ImageBlot.create({ src })
+      this.contentNode.appendChild($preI)
+      this.contentNode.appendChild(SpanBlot.create(name))
+      let time = formatBegin(timestamp)
+      this.contentNode.appendChild(Text.create(time))
+    }
   }
 
   static value (domNode) {
@@ -248,6 +259,7 @@ class SpeakerV2 extends Embed {
       name: domNode.getAttribute('name'),
       timestamp: domNode.getAttribute('timestamp'),
       speaker: domNode.getAttribute('speaker'),
+      src: domNode.firstElementChild.firstElementChild.getAttribute('src'),
     }
   }
 
@@ -264,11 +276,43 @@ SpeakerV2.className = 'speakerV2'
 SpeakerV2.blotName = 'speakerV2'
 SpeakerV2.tagName = 'span'
 
+class SpanBlot extends Inline {
+  static create (text) {
+    const node = super.create()
+    node.appendChild(Text.create(text))
+    return node
+  }
+  static formats (node) {
+    node.innerText
+  }
+}
+SpanBlot.tagName = 'span'
+SpanBlot.className = 'text'
+SpanBlot.blotName = 'span'
+
+class IconBlot extends Inline {
+  static create ({ iconText }) {
+    const node = super.create()
+    node.appendChild(Text.create(iconText))
+    return node
+  }
+  static formats (node) {
+    return {
+      iconText: node.innerText
+    }
+  }
+}
+
+IconBlot.className = 'speaker-icon'
+IconBlot.blotName = 'speakerIcon'
+IconBlot.tagName = 'span'
+
 Quill.register(SpokenBlot)
 Quill.register(Speaker)
 Quill.register(rangeBlot)
 Quill.register(languageBlot)
 Quill.register(SpeakerV2)
+Quill.register(SpanBlot)
 
 function formatBegin(begin,fmt) {
   if (!begin) return '00:00:00'
